@@ -1,0 +1,38 @@
+{% extends "layout.html" %} {% block content %} 
+<!-- put image -->
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <h1> Annotator {{num}}</h1>
+            <img class = "img-fluid border" src="{{ image_file }}" alt="first person image">
+        </div>
+    </div>
+</div>
+
+<div class = "container mt-5">
+    <form method = "POST", action = "" id = "vlm suggestions">
+        {{ form.hidden_tag() }}
+        <fieldset class = "form-group">
+            <legend class = "border-bottom mb-4"> Please enter the most appropriate activity performed by the camera wearer.
+                <div class = "form-group">
+                    Other: 
+                    {% if form.other_activity.errors %}
+                        {{ form.other_activity(class = "is-invalid") }}
+                            <div class = "invalid-feedback">
+                                {% for error in form.other_activity.errors %}
+                                    <span>{{error}}</span>
+                                {% endfor %}
+                    {% else %}
+                        {{ form.other_activity() }}
+                    {% endif %}
+                </div>
+            </legend>
+        </fieldset>
+        <div class="form-group">
+            {{form.submit(class = "btn btn-outline-info")}}
+         </div>
+    </form>
+    </div>
+</div>
+
+{% endblock content %}
