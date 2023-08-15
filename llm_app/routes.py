@@ -170,7 +170,7 @@ def annotation_page(vlm_page):
                 session["image_counter"] = session.get("image_counter") + 1 # increment image index to get new image
             else:
                 flash("Please either select from the options or type in the other box. Do not leave both empty or both filled.", "danger")
-        
+            return redirect(url_for("annotation_page", vlm_page = vlm_page))
         session["start_time"] = time()
         return render_template(f"annotation_page.html", 
                             title = f"Annotation with {vlm_page}", 
