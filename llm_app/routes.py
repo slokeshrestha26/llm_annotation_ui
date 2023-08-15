@@ -1,14 +1,13 @@
 from flask import render_template, url_for, flash, redirect, session, request
 from llm_app.db_models import User, Annotation, Image
-from llm_app.forms import RegistrationForm, AnnotationForm, LoginForm
+from llm_app.forms import RegistrationForm, AnnotationForm, LoginForm, NASATLXForm
 from llm_app import app, db
 from flask_login import login_user, current_user, logout_user, login_required
 from time import time
+from llm_app.ml_models import get_inference
 
 import random
 import os
-
-print(os.getcwd())
 
 @app.route("/")
 @app.route("/registration", methods=["GET", "POST"])
@@ -16,7 +15,7 @@ def registration():
     if current_user.is_authenticated:
         return redirect(url_for("redirect_to_annotator"))
     form = RegistrationForm()
-    if request == "POST" and form.validate_on_submit():
+    if request.method == "POST" and form.validate_on_submit():
         # create a new user
         user = User(name = form.name.data,
                     age = form.age.data,
@@ -72,12 +71,24 @@ def logout():
 def finished():
     return render_template("finished.html")
 
-@app.route("/transition_page", methods=["GET", "POST"])
+@app.route("/nasa_tlx", methods=["GET", "POST"])
 @login_required
-def transition_page():
+def nasa_tlx():
+    form = NASATLXForm()
     if request.method == "POST":
-        return redirect(url_for("redirect_to_annotator"))
-    return render_template("transition_page.html")
+        if form.validate_on_submit():
+            annotation_id = session.get("current_annotation_id")
+
+            Annotation.query.filter_by(id = annotation_id).update({"mental_demand": form.mental_demand.data,
+                        "physical_demand": form.physical_demand.data,
+                        "temporal_demand": form.temporal_demand.data,
+                        "performance": form.performance.data,
+                        "effort": form.effort.data,
+                        "frustration": form.frustration.data})
+
+            db.session.commit()
+            return redirect(url_for("redirect_to_annotator"))
+    return render_template("nasa_tlx.html", form = form)
 
 
 @app.route("/redirect_to_annotator")
@@ -112,22 +123,41 @@ def redirect_to_annotator():
 @app.route("/annotation_page/<vlm_page>", methods=["GET", "POST"])
 @login_required
 def annotation_page(vlm_page):
+    n_images = 100 # number of images
+
     # get data from current annotation
     current_annotation_id = session.get("current_annotation_id")
     dataset_name = Annotation.query.with_entities(Annotation.dataset_name).filter_by(id = current_annotation_id).scalar()
 
-    image_dir = f"./llm_app/static/test_images/{dataset_name}/"
-    image_fname_list = os.listdir(image_dir)
-    if session.get("image_counter") < len(image_fname_list):
+    test_dir_name = "test_images" #CHANGE THIS TO TOGGLE BETWEEN TEST AND ACTUAL DATASET
+    image_dir = f"./llm_app/static/{test_dir_name}/{dataset_name}/"
+    p_id_fname_list = []# string with p_id/fname
+    for root, _, files in os.walk(image_dir):
+        for f in files:
+            p_id_fname_list.append(os.path.join(root[-4:], f)) # [-4:] gets just the p_id
+
+    if session.get("image_counter") < len(p_id_fname_list):
+        
+        p_id_fname = p_id_fname_list[session.get("image_counter")]
+        p_id, frame_num = p_id_fname.split("/")
+        frame_num = frame_num.split(".")[0] # remove the extension
         form = AnnotationForm()
-        image_fname = image_fname_list[session.get("image_counter")]
-        form.image_name = image_fname
+        image_file = url_for("static", filename = f"{test_dir_name}/{dataset_name}/{p_id_fname}")
+        
+        # suggestions from the vlm
+        suggestions = ["None"]
+
+        if vlm_page != "no_help":
+            suggestions.extend(get_inference(p_id, int(frame_num), vlm_page))
+
+
+        form.activity.choices = AnnotationForm.convert_to_choices(suggestions)
 
         if request.method == "POST":
             if form.validate_on_submit():
                 session["end_time"] = time()
                 activity = form.activity.data if form.activity.data else ""
-                image_annotation = Image(name = image_fname,
+                image_annotation = Image(name = p_id_fname,
                                     start_time = session.get("start_time"),
                                     end_time = session.get("end_time"),
                                     activity = form.activity.data,
@@ -136,19 +166,12 @@ def annotation_page(vlm_page):
 
                 db.session.add(image_annotation)
                 db.session.commit()
-                flash(f"Image annotation submitted for {image_fname}!", "success")
+                flash(f"Image annotation submitted for {p_id_fname}!", "success")
                 session["image_counter"] = session.get("image_counter") + 1 # increment image index to get new image
             else:
                 flash("Please either select from the options or type in the other box. Do not leave both empty or both filled.", "danger")
         
-        image_file = url_for("static", filename = f"test_images/{dataset_name}/{image_fname}")
-        
-        # suggestions from the vlm
-        suggestions = ["cooking", "washing dishes", "preparing food", "eating", "None"] #TODO get the image from the actual ml model
-
-        form.activity.choices = AnnotationForm.convert_to_choices(suggestions)
         session["start_time"] = time()
-
         return render_template(f"annotation_page.html", 
                             title = f"Annotation with {vlm_page}", 
                             image_file = image_file,
@@ -156,4 +179,4 @@ def annotation_page(vlm_page):
                             num = session.get("vlm_index"),
                             form = form)
 
-    return redirect(url_for("transition_page"))
+    return redirect(url_for("nasa_tlx"))
