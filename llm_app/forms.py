@@ -39,17 +39,8 @@ class LoginForm(FlaskForm):
 
 class AnnotationForm(FlaskForm):
     """Form for annotation of one image"""
-    # Choices for the radio buttons
-    activity_choices = [
-        ('option1', 'Option 1'),
-        ('option2', 'Option 2'),
-        ('option3', 'Option 3'),
-        ('None', 'None of the above')
-    ]
-
-    activity = RadioField("Activity", choices=activity_choices, validators=[DataRequired()])
+    activity = RadioField("Activity", validators=[DataRequired()])
     other_activity = StringField("Other Activity", validators=[Optional()])
-    image_name = StringField("Image Name", validators=[Optional()])
     submit = SubmitField("Submit")
 
     # Custom validator to make sure one of the activity or other_activity is filled
@@ -75,3 +66,37 @@ class AnnotationForm(FlaskForm):
     def convert_to_choices(choices_list):
         """Converts a list of strings to a list of tuples for use in a RadioField"""
         return [(choice, choice) for choice in choices_list]
+
+class NASATLXForm(FlaskForm):
+    """Survey for the NASA TLX"""
+    # scale from 1 to 21
+    choices = [
+        ('1', 'Very Low: 1'), 
+        ('2', '2'),
+        ('3', '3'),
+        ('4', '4'),
+        ('5', '5'),
+        ('6', '6'),
+        ('7', '7'),
+        ('8', '8'),
+        ('9', '9'),
+        ('10', '10'),
+        ('11', '11'),
+        ('12', '12'),
+        ('13', '13'),
+        ('14', '14'),
+        ('15', '15'),
+        ('16', '16'),
+        ('17', '17'),
+        ('18', '18'),
+        ('19', '19'),
+        ('20', '20'),
+        ('21', 'Very High: 21')
+    ]
+    mental_demand = RadioField("Mental Demand", choices=choices, validators=[DataRequired()])
+    physical_demand = RadioField("Physical Demand", choices=choices, validators=[DataRequired()])
+    temporal_demand = RadioField("Temporal Demand", choices=choices, validators=[DataRequired()])
+    performance = RadioField("Performance", choices=choices, validators=[DataRequired()])
+    effort = RadioField("Effort", choices=choices, validators=[DataRequired()])
+    frustration = RadioField("Frustration", choices=choices, validators=[DataRequired()])
+    submit = SubmitField("Submit")

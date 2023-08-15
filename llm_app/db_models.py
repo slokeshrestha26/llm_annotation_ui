@@ -20,6 +20,14 @@ class Annotation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(20), nullable = False)
     dataset_name = db.Column(db.String(20), nullable = False)
+
+    mental_demand = db.Column(db.Integer, nullable = False, default = " ")
+    physical_demand = db.Column(db.Integer, nullable = False, default = " ")
+    temporal_demand = db.Column(db.Integer, nullable = False, default = " ")
+    performance = db.Column(db.Integer, nullable = False, default = " ")
+    effort = db.Column(db.Integer, nullable = False, default = " ")
+    frustration = db.Column(db.Integer, nullable = False, default = " ")
+
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable = False)
     images = db.relationship("Image", backref= "annotation_container", lazy = True)
 
