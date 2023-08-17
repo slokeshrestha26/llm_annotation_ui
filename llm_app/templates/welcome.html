@@ -1,10 +1,77 @@
-{% extends "layout.html" %} 
+{% extends "layout.html" %}
 {% block content %}
-<h1 class = "text-center"> Welcome to the study</h1>
-<h3 class = "text-center"> Please click continue to start the study.</h3>
-<form method = "POST", action = "" id = "transition page">
-    <div class = "form-group text-right">
-        <button type="submit" class="btn btn-primary">Continue</button>
+<h1 class="text-center"> Welcome to the study</h1>
+<div class="text-left mt-5">
+    <h2> Instructions</h2>
+    <p> In this study, you will be presented with a series of first-person images. You may or may not be presented with
+        a list of activities or objects to choose from on the right hand side of the page. Your task is to choose the
+        best description of activities being performed
+        by the camera wearer in the image. If the presented list of activities or objects does not contain the activity
+        or object you want to describe, please
+        use the "other" text box to type in your answer.
+    </p>
+    <p>Below are some examples snippets of annotations performed.</p>
+</div>
+
+<div class="text-center">
+    <!-- images here -->
+    <div>
+        <img src="{{ url_for('static', filename='click_option_click_submit.png') }}" class="img-fluid"
+            alt="Example image" width="900" , height="1000">
+        <p><small>Pick the most appropriate activity in the list if you can find it, select it and click submit
+            </small></p><br>
     </div>
-</form>
+    <div class="mt-5">
+        <img src="{{ url_for('static', filename='type_in_other_click_submit.png') }}" class="img-fluid"
+            alt="Example image" width="900" , height="1000">
+        <p>
+            <small>If you are not satisfied by the provided options, type in your own answer on the other text
+                box</small>
+        </p>
+        <!-- </div>
+        <div class = "mt-5">
+            <img src="{{ url_for('static', filename='type_in_other_click_submit_2.png') }}" class="img-fluid"
+                alt="Example image" width="900" , height="1000">
+                <p>
+                    <small></small>
+                </p>
+        </div> -->
+        <div class="mt-5"><img src="{{ url_for('static', filename='ambiguous_image.png') }}" class="img-fluid"
+                alt="Responsive image" width="900" , height="1000">
+            <p>
+                <small>If the activity being performed in the first-person image is not clear, make your best
+                    guess</small>
+            </p>
+        </div>
+
+    </div>
+</div>
+<div class="text-left mt-5">
+    <h3 class="mb-3 mt-5">Frequently Asked Questions</h3>
+    <p> <strong>What if the activity is not clear in the picture?
+        </strong><br>
+        We ask you to choose the best description of the activity being performed in the image. If you are not sure,
+        please put your best guess in the text box or choose the best answer from the suggestion list on the right
+        side
+        of the page.
+    </p>
+
+    <p><strong>Some of the suggestions provided are nouns or names of objects rather than activities. Do I select
+            nouns?</strong><br>
+        We ask you to choose the best description of the activity being performed in the image. If the suggested
+        list
+        are nouns,
+        please do your best to find an activity that represents the image or type in the text box to write the
+        activity.
+    </p>
+</div>
+
+<div class="col">
+    <h3 class="text-center mt-5"> Please click continue to start the study</h3>
+    <form method="POST" , action="" id="transition page">
+        <div class="form-group text-center">
+            <button type="submit" class="btn btn-primary">Continue</button>
+        </div>
+    </form>
+</div>
 {% endblock content %}
