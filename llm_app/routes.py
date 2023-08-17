@@ -71,25 +71,6 @@ def logout():
 def finished():
     return render_template("finished.html")
 
-@app.route("/nasa_tlx", methods=["GET", "POST"])
-@login_required
-def nasa_tlx():
-    form = NASATLXForm()
-    if request.method == "POST":
-        if form.validate_on_submit():
-            annotation_id = session.get("current_annotation_id")
-
-            Annotation.query.filter_by(id = annotation_id).update({"mental_demand": form.mental_demand.data,
-                        "physical_demand": form.physical_demand.data,
-                        "temporal_demand": form.temporal_demand.data,
-                        "performance": form.performance.data,
-                        "effort": form.effort.data,
-                        "frustration": form.frustration.data})
-
-            db.session.commit()
-            return redirect(url_for("redirect_to_annotator"))
-    return render_template("nasa_tlx.html", form = form)
-
 
 @app.route("/redirect_to_annotator")
 @login_required
@@ -123,8 +104,6 @@ def redirect_to_annotator():
 @app.route("/annotation_page/<vlm_page>", methods=["GET", "POST"])
 @login_required
 def annotation_page(vlm_page):
-    n_images = 100 # number of images
-
     # get data from current annotation
     current_annotation_id = session.get("current_annotation_id")
     dataset_name = Annotation.query.with_entities(Annotation.dataset_name).filter_by(id = current_annotation_id).scalar()
@@ -134,6 +113,7 @@ def annotation_page(vlm_page):
     p_id_fname_list = []# string with p_id/fname
     for root, _, files in os.walk(image_dir):
         for f in files:
+            if f == ".DS_Store": continue
             p_id_fname_list.append(os.path.join(root[-4:], f)) # [-4:] gets just the p_id
 
     if session.get("image_counter") < len(p_id_fname_list):
@@ -145,22 +125,21 @@ def annotation_page(vlm_page):
         image_file = url_for("static", filename = f"{test_dir_name}/{dataset_name}/{p_id_fname}")
         
         # suggestions from the vlm
-        suggestions = ["None"]
+        suggestions = []
 
         if vlm_page != "no_help":
             suggestions.extend(get_inference(p_id, int(frame_num), vlm_page))
-
-
+        suggestions = list(set(suggestions)) # remove duplicates
         form.activity.choices = AnnotationForm.convert_to_choices(suggestions)
 
         if request.method == "POST":
-            if form.validate_on_submit():
+            if form.validate_on_submit() and (form.activity.data or form.other_activity.data):
                 session["end_time"] = time()
                 activity = form.activity.data if form.activity.data else ""
                 image_annotation = Image(name = p_id_fname,
                                     start_time = session.get("start_time"),
                                     end_time = session.get("end_time"),
-                                    activity = form.activity.data,
+                                    activity = activity,
                                     text_in_other_box = form.other_activity.data,
                                     annotation_id = current_annotation_id)
 
@@ -170,7 +149,9 @@ def annotation_page(vlm_page):
                 session["image_counter"] = session.get("image_counter") + 1 # increment image index to get new image
             else:
                 flash("Please either select from the options or type in the other box. Do not leave both empty or both filled.", "danger")
+            
             return redirect(url_for("annotation_page", vlm_page = vlm_page))
+        
         session["start_time"] = time()
         return render_template(f"annotation_page.html", 
                             title = f"Annotation with {vlm_page}", 
@@ -180,3 +161,23 @@ def annotation_page(vlm_page):
                             form = form)
 
     return redirect(url_for("nasa_tlx"))
+
+
+@app.route("/nasa_tlx", methods=["GET", "POST"])
+@login_required
+def nasa_tlx():
+    form = NASATLXForm()
+    if request.method == "POST":
+        if form.validate_on_submit():
+            annotation_id = session.get("current_annotation_id")
+
+            Annotation.query.filter_by(id = annotation_id).update({"mental_demand": form.mental_demand.data,
+                        "physical_demand": form.physical_demand.data,
+                        "temporal_demand": form.temporal_demand.data,
+                        "performance": form.performance.data,
+                        "effort": form.effort.data,
+                        "frustration": form.frustration.data})
+
+            db.session.commit()
+            return redirect(url_for("redirect_to_annotator"))
+    return render_template("nasa_tlx.html", form = form)

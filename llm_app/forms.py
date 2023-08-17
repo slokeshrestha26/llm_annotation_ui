@@ -35,37 +35,40 @@ class LoginForm(FlaskForm):
                                     NumberRange(min=18)])
     submit = SubmitField('Login')
 
+class XOR(object):
+    def __init__(self, field2_name, message = None):
+        self.message = message
+        self.field2_name = field2_name
+
+    def __call__(self, form, field):
+        field2 = form[self.field2_name]
+        if not self.is_valid(field.data, field2.data):
+            raise ValidationError(self.message or 'Validation failed')
+        
+    def is_valid(self, data1, data2):
+        return bool(data1) ^ bool(data2)
 
 
 class AnnotationForm(FlaskForm):
     """Form for annotation of one image"""
-    activity = RadioField("Activity", validators=[DataRequired()])
-    other_activity = StringField("Other Activity", validators=[Optional()])
+    activity = RadioField("Activity", validators = [XOR("other_activity"), Optional()])
+    other_activity = StringField("Other Activity", validators = [XOR("activity"), Optional()])
     submit = SubmitField("Submit")
 
     # Custom validator to make sure one of the activity or other_activity is filled
     def validate_activity(self, activity):
-        if activity.data == "None":
-            bool_activity = False
-        else:
-            bool_activity = bool(self.activity.data)
+        bool_activity = bool(self.activity.data)
         bool_other_activity = bool(self.other_activity.data)
-        if bool_activity == bool_other_activity:
-            raise ValidationError("Please choose one of the options or fill in the Other Activity field.")
-
-    def validate_other_activity(self, other_activity):
-        if self.activity.data == "None":
-            bool_activity = False
-        else:
-            bool_activity = bool(self.activity.data)
-        bool_other_activity = bool(self.other_activity.data)
-        if bool_activity == bool_other_activity:
+        print(bool_activity, bool_other_activity)
+        if not (bool_activity ^ bool_other_activity):
             raise ValidationError("Please choose one of the options or fill in the Other Activity field.")
 
     @staticmethod
     def convert_to_choices(choices_list):
         """Converts a list of strings to a list of tuples for use in a RadioField"""
         return [(choice, choice) for choice in choices_list]
+    
+
 
 class NASATLXForm(FlaskForm):
     """Survey for the NASA TLX"""
