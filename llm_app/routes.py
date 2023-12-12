@@ -1,10 +1,11 @@
 from flask import render_template, url_for, flash, redirect, session, request
 from llm_app.db_models import User, Annotation, Image
-from llm_app.forms import RegistrationForm, AnnotationForm, LoginForm, NASATLXForm
+from llm_app.forms import RegistrationForm, AnnotationForm, LoginForm
 from llm_app import app, db
 from flask_login import login_user, current_user, logout_user, login_required
 from time import time
 from llm_app.ml_models import get_inference
+from llm_app.utils import remove_duplicates
 
 import random
 import os
@@ -16,15 +17,16 @@ def registration():
         return redirect(url_for("redirect_to_annotator"))
     form = RegistrationForm()
     if request.method == "POST" and form.validate_on_submit():
+        if User.query.filter_by(pid = form.pid.data).first():
+            flash(f"Account already exists for {form.pid.data}!", "danger")
+            return redirect(url_for("login"))
         # create a new user
-        user = User(name = form.name.data,
-                    age = form.age.data,
-                    email = form.email.data)
+        user = User(pid = form.pid.data)
 
         db.session.add(user)
         db.session.commit()
 
-        flash(f"Account created for {form.name.data}!", "success")
+        flash(f"Account created for {form.pid.data}!", "success")
         return redirect(url_for("login"))
     return render_template("register.html", title="Registration", form=form)
 
@@ -34,8 +36,8 @@ def login():
         return redirect(url_for("redirect_to_annotator"))
     form = LoginForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(email = form.email.data).first()
-        if user and user.age == form.age.data:
+        user = User.query.filter_by(pid = form.pid.data).first()
+        if user and user.pid == form.pid.data:
             login_user(user)
 
             # vlm pages and dataset data associated with current user session
@@ -70,6 +72,14 @@ def logout():
 @login_required
 def finished():
     return render_template("finished.html")
+
+@app.route("/transition_page", methods=["GET", "POST"])
+@login_required
+def transition_page():
+    if request.method == "POST":
+        return redirect(url_for("redirect_to_annotator"))
+    return render_template("transition_page.html")
+
 
 
 @app.route("/redirect_to_annotator")
@@ -109,7 +119,7 @@ def annotation_page(vlm_page):
     dataset_name = Annotation.query.with_entities(Annotation.dataset_name).filter_by(id = current_annotation_id).scalar()
 
     test_dir_name = "test_images" #CHANGE THIS TO TOGGLE BETWEEN TEST AND ACTUAL DATASET
-    image_dir = f"./llm_app/static/{test_dir_name}/{dataset_name}/"
+    image_dir = f"./llm_app/static/images/{dataset_name}/"
     p_id_fname_list = []# string with p_id/fname
     for root, _, files in os.walk(image_dir):
         for f in files:
@@ -122,14 +132,15 @@ def annotation_page(vlm_page):
         p_id, frame_num = p_id_fname.split("/")
         frame_num = frame_num.split(".")[0] # remove the extension
         form = AnnotationForm()
-        image_file = url_for("static", filename = f"{test_dir_name}/{dataset_name}/{p_id_fname}")
+        image_file = url_for("static", filename = f"images/{dataset_name}/{p_id_fname}")
         
         # suggestions from the vlm
         suggestions = []
 
         if vlm_page != "no_help":
             suggestions.extend(get_inference(p_id, int(frame_num), vlm_page))
-        suggestions = list(set(suggestions)) # remove duplicates
+        suggestions = remove_duplicates(suggestions) # remove duplicates
+        suggestions = suggestions[:5] # get top 5 suggestions
         form.activity.choices = AnnotationForm.convert_to_choices(suggestions)
 
         if request.method == "POST":
@@ -160,24 +171,4 @@ def annotation_page(vlm_page):
                             num = session.get("vlm_index"),
                             form = form)
 
-    return redirect(url_for("nasa_tlx"))
-
-
-@app.route("/nasa_tlx", methods=["GET", "POST"])
-@login_required
-def nasa_tlx():
-    form = NASATLXForm()
-    if request.method == "POST":
-        if form.validate_on_submit():
-            annotation_id = session.get("current_annotation_id")
-
-            Annotation.query.filter_by(id = annotation_id).update({"mental_demand": form.mental_demand.data,
-                        "physical_demand": form.physical_demand.data,
-                        "temporal_demand": form.temporal_demand.data,
-                        "performance": form.performance.data,
-                        "effort": form.effort.data,
-                        "frustration": form.frustration.data})
-
-            db.session.commit()
-            return redirect(url_for("redirect_to_annotator"))
-    return render_template("nasa_tlx.html", form = form)
+    return redirect(url_for("transition_page"))

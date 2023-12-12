@@ -1,43 +1,19 @@
 {% extends "layout.html" %} {% block content %}
 <div class="content-section">
-  <form method="POST" action="">
+  <form method="POST" action="" autocomplete="off">
     {{ form.hidden_tag() }}
     <fieldset class="form-group">
       <legend class="border-bottom mb-4">Welcome to the LLM annotation study for Human Signals Lab!</legend>
       <div class="form-group">
-        {{ form.name.label(class = "form-control-label") }} 
-        {% if form.name.errors %}
-            {{ form.name(class = "form-control form-control-lg is-invalid") }}
+        {{ form.pid.label(class = "form-control-label") }} 
+        {% if form.pid.errors %}
+            {{ form.pid(class = "form-control form-control-lg is-invalid") }}
                 <div class = "invalid-feedback">
-                    {% for error in form.name.errors %}
+                    {% for error in form.pid.errors %}
                         <span>{{error}}</span>
                     {% endfor %}
         {% else %}
-            {{ form.name(class = "form-control form-control-lg") }}
-        {% endif %}
-      </div>
-      <div class="form-group">
-        {{ form.email.label(class = "form-control-label") }} 
-        {% if form.email.errors %}
-            {{ form.email(class = "form-control form-control-lg is-invalid") }}
-                <div class = "invalid-feedback">
-                    {% for error in form.email.errors %}
-                        <span>{{error}}</span>
-                    {% endfor %}
-        {% else %}
-            {{ form.email(class = "form-control form-control-lg") }}
-        {% endif %}
-      </div>
-      <div class="form-group">
-        {{ form.age.label(class = "form-control-label") }} 
-        {% if form.age.errors %}
-            {{ form.age(class = "form-control form-control-lg is-invalid") }}
-                <div class = "invalid-feedback">
-                    {% for error in form.age.errors %}
-                        <span>{{error}}</span>
-                    {% endfor %}
-        {% else %}
-            {{ form.age(class = "form-control form-control-lg") }}
+            {{ form.pid(class = "form-control form-control-lg") }}
         {% endif %}
       </div>
     </fieldset>
