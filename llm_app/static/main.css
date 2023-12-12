@@ -84,5 +84,30 @@ body {
     font-size: 2.5rem;
   }
 
+.survey-box-1{
+  background-color: #cbd5db;
+}
 
+.survey-box-2{
+  background-color: #d9d1ca;
+}
+
+.survey-box-3{
+  background-color: #6ca3a1;
+}
+
+.survey-box-4{
+  background-color: #d2d7b6;
+}
   
+.survey-box-5{
+  background-color: #8184b8;
+}
+
+.survey-box-6{
+  background-color: #97b495;
+}
+
+.radio-buttons{
+  font-size: 0.9rem;
+}
