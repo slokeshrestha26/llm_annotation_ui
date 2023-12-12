@@ -10,6 +10,10 @@ This is a flask app that presents a UI to help image annotators annotate human a
 
 ## Prerequisites
 You can clone this repository. Before you begin, ensure all the packages are installed by running the following command in a virtual environment:
+
+`cd path/to/your/directory`
+`python -m venv myvenv`
+`source myenv/bin/activate`
 `pip install -r requirements.txt`
 
 ## Running The App
@@ -21,6 +25,9 @@ If you are running the app for the first time, you will need to initialize the d
 >>> app.app_context().push()
 >>> db.create_all()
 ```
+
+If you encounter any problems with the database, try deleting the database at `instance/site.db` and run the above commands again. 
+
 You can run the app in your localhost by running the following command:
 
 `python3 run.py`
